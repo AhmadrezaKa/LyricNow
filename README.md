@@ -1,6 +1,8 @@
 # LyricNow
 A small always-on-top widget that shows the lyric line currently playing in Spotify (or any other media player Windows knows about).
 
+**New here? See the [step-by-step install & use guide](docs/GUIDE.md).**
+
 ## How it works
 - **Now playing:** reads the Windows media session (the same info as the volume-key media flyout). No Spotify login or API key needed. Spotify's session is preferred; other players are used as a fallback.
 - **Lyrics:** looked up independently of Spotify, so songs without lyrics in Spotify can still get them:
