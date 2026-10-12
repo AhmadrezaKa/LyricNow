@@ -3,7 +3,7 @@ using global::Windows.Media.Control;
 
 namespace LyricNow.Media;
 
-public sealed record PlaybackSnapshot(TimeSpan Position, bool IsPlaying);
+public sealed record PlaybackSnapshot(TimeSpan Position, TimeSpan Duration, bool IsPlaying);
 
 /// <summary>
 /// Reads "now playing" info from Windows' media sessions (the same data the volume-key media flyout shows).
@@ -17,8 +17,11 @@ public sealed class MediaWatcher
     private TrackInfo? _track;
     private int _refreshVersion;
 
-    /// <summary>Raised (on a background thread) when the track changes, or with null when nothing is playing.</summary>
-    public event Action<TrackInfo?>? TrackChanged;
+    /// <summary>
+    /// Raised (on a background thread) when the track changes, or with null when nothing is playing.
+    /// The second argument is the album cover image file, when the player provides one.
+    /// </summary>
+    public event Action<TrackInfo?, byte[]?>? TrackChanged;
 
     public async Task StartAsync()
     {
@@ -50,7 +53,7 @@ public sealed class MediaWatcher
             if (timeline.EndTime > TimeSpan.Zero && position > timeline.EndTime)
                 position = timeline.EndTime;
 
-            return new PlaybackSnapshot(position, playing);
+            return new PlaybackSnapshot(position, timeline.EndTime - timeline.StartTime, playing);
         }
         catch
         {
@@ -98,6 +101,7 @@ public sealed class MediaWatcher
         lock (_gate) session = _session;
 
         TrackInfo? track = null;
+        byte[]? cover = null;
         if (session is not null)
         {
             try
@@ -105,8 +109,11 @@ public sealed class MediaWatcher
                 var props = await session.TryGetMediaPropertiesAsync();
                 var timeline = session.GetTimelineProperties();
                 if (!string.IsNullOrWhiteSpace(props?.Title))
+                {
                     track = new TrackInfo(props.Title, props.Artist ?? "", props.AlbumTitle ?? "",
                         timeline.EndTime - timeline.StartTime);
+                    cover = await ReadCoverAsync(props.Thumbnail);
+                }
             }
             catch
             {
@@ -121,6 +128,25 @@ public sealed class MediaWatcher
             _track = track;
         }
 
-        TrackChanged?.Invoke(track);
+        TrackChanged?.Invoke(track, cover);
+    }
+
+    private static async Task<byte[]?> ReadCoverAsync(global::Windows.Storage.Streams.IRandomAccessStreamReference? thumbnail)
+    {
+        if (thumbnail is null)
+            return null;
+
+        try
+        {
+            using var winStream = await thumbnail.OpenReadAsync();
+            using var stream = winStream.AsStreamForRead();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            return buffer.ToArray();
+        }
+        catch
+        {
+            return null; // the cover is a nice-to-have
+        }
     }
 }

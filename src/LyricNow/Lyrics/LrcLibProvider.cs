@@ -15,7 +15,12 @@ public sealed class LrcLibProvider(HttpClient http) : ILyricsProvider
     // How far a search result's duration may differ from the track before we treat it as a different recording.
     private static readonly TimeSpan MaxDurationDiff = TimeSpan.FromSeconds(8);
 
+    // When matching on artist + duration alone, be much stricter about the length.
+    private static readonly TimeSpan ArtistOnlyDurationDiff = TimeSpan.FromSeconds(2);
+
     public string Name => "LRCLIB";
+
+    public bool ProvidesSyncedLyrics => true;
 
     public async Task<LyricsResult?> FindAsync(TrackInfo track, CancellationToken ct)
     {
@@ -52,7 +57,17 @@ public sealed class LrcLibProvider(HttpClient http) : ILyricsProvider
             plainFallback ??= best;
         }
 
-        // 3. No synced lyrics anywhere; plain lyrics are still better than nothing.
+        // 3. Titles may be written differently (e.g. Persian script vs. Latin "Finglish"), so search the
+        //    artist's songs and accept one whose length matches almost exactly.
+        if (plainFallback is null && track.Duration > TimeSpan.Zero)
+        {
+            var byArtist = PickByArtistAndDuration(await SearchAsync($"q={Uri.EscapeDataString(artist)}", ct), track, artist);
+            if (byArtist?.SyncedLyrics is { Length: > 0 })
+                return LyricsResult.FromText(byArtist.SyncedLyrics, null, track.Duration, Name);
+            plainFallback = byArtist;
+        }
+
+        // 4. No synced lyrics anywhere; plain lyrics are still better than nothing.
         return plainFallback is null
             ? null
             : LyricsResult.FromText(null, plainFallback.PlainLyrics, track.Duration, Name);
@@ -91,6 +106,15 @@ public sealed class LrcLibProvider(HttpClient http) : ILyricsProvider
             .ThenBy(c => hasDuration ? Math.Abs(c.Duration - track.Duration.TotalSeconds) : 0)
             .FirstOrDefault();
     }
+
+    private static LrcLibRecord? PickByArtistAndDuration(List<LrcLibRecord> candidates, TrackInfo track, string artist) =>
+        candidates
+            .Where(c => c.SyncedLyrics is { Length: > 0 } || c.PlainLyrics is { Length: > 0 })
+            .Where(c => TitleCleaner.LooselyMatches(c.ArtistName ?? "", artist))
+            .Where(c => (TimeSpan.FromSeconds(c.Duration) - track.Duration).Duration() <= ArtistOnlyDurationDiff)
+            .OrderByDescending(c => c.SyncedLyrics is { Length: > 0 })
+            .ThenBy(c => Math.Abs(c.Duration - track.Duration.TotalSeconds))
+            .FirstOrDefault();
 
     private sealed class LrcLibRecord
     {

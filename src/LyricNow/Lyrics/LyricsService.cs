@@ -14,20 +14,27 @@ public sealed class LyricsService
     private static readonly string CacheDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LyricNow", "cache");
 
+    // Synced-capable providers first: once only plain-text providers remain, the first plain result wins.
     private readonly List<ILyricsProvider> _providers;
+    private readonly Func<bool> _useGenius;
 
     // Tracks nobody had lyrics for; kept in memory only so they're retried on the next app start.
     private readonly HashSet<string> _notFound = [];
 
-    public LyricsService()
+    public LyricsService(Func<bool> useGenius)
     {
+        _useGenius = useGenius;
+
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         // LRCLIB asks clients to identify themselves.
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("LyricNow", "0.1"));
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(https://github.com/AhmadrezaKa/LyricNow)"));
 
-        _providers = [new LrcLibProvider(http), new LyricsOvhProvider(http)];
+        _providers = [new LrcLibProvider(http), new GeniusProvider(http), new LyricsOvhProvider(http)];
     }
+
+    /// <summary>Call when the set of sources changes, so songs that had no lyrics are searched again.</summary>
+    public void ForgetMisses() => _notFound.Clear();
 
     public async Task<LyricsResult?> FindAsync(TrackInfo track, CancellationToken ct)
     {
@@ -41,8 +48,16 @@ public sealed class LyricsService
         LyricsResult? best = null;
         Exception? lastError = null;
 
-        foreach (var provider in _providers)
+        var providers = _providers.Where(p => p is not GeniusProvider || _useGenius()).ToList();
+
+        for (var i = 0; i < providers.Count; i++)
         {
+            var provider = providers[i];
+
+            // We already have plain lyrics and nobody further down can do better.
+            if (best is not null && !providers.Skip(i).Any(p => p.ProvidesSyncedLyrics))
+                break;
+
             try
             {
                 var result = await provider.FindAsync(track, ct);

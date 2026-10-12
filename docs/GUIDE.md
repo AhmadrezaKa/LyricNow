@@ -80,12 +80,25 @@ If Spotify isn't open yet, the widget says **"Waiting for Spotify…"** and pick
 | What you want | How |
 |---|---|
 | Move the widget | Click and drag it anywhere. The position is remembered. |
-| Fix lyrics that are early/late | Hover over the widget. Small **−** and **+** buttons appear bottom-left. Each click shifts by 0.5 s. **+** shows lyrics sooner, **−** shows them later. Saved per song. |
-| Undo a timing fix | Right-click → **Reset timing for this song** |
+| Change the look | Right-click → **Style** → Classic, Frosted, Floating, Karaoke or Strip. Your choice is remembered. |
+| Fix lyrics that are early/late | Hover over the widget. Small **−** and **+** buttons appear bottom-left. Each click shifts by 0.5 s. **+** shows lyrics sooner, **−** shows them later. Saved per song. (The Floating and Strip styles hide these buttons; use right-click → **Lyrics timing** instead.) |
+| Undo a timing fix | Right-click → **Lyrics timing** → **Reset timing for this song** |
 | Put it back in the corner | Right-click → **Reset position** |
 | Close it | Right-click → **Exit** |
 
 The widget doesn't appear in the taskbar. Right-click → **Exit** is how you close it.
+
+### The five styles
+
+| Style | What it looks like |
+|---|---|
+| **Classic** | The original solid dark panel with the Windows system font. |
+| **Frosted** | Blurred glass panel with the album cover and a song-progress bar. |
+| **Floating** | No panel, just large text with a soft shadow. Best on darker wallpapers. |
+| **Karaoke** | The current line fills with color as it's sung (right to left for Persian). |
+| **Strip** | A slim pill with the current and next line and a thin progress line at the bottom. |
+
+All styles except Classic use Bricolage Grotesque for English and Vazirmatn for Persian. The fonts are built into the app. Persian lines are always aligned to the right.
 
 ### What the messages mean
 
@@ -103,9 +116,14 @@ The widget doesn't appear in the taskbar. Right-click → **Exit** is how you cl
 LyricNow does **not** depend on Spotify's lyrics. Even songs that show no lyrics in Spotify are looked up in:
 
 1. **LRCLIB** (lrclib.net): free database with time-synced lyrics
-2. **lyrics.ovh**: plain-text fallback
+2. **Genius** (genius.com): very wide coverage, including many Persian songs, but without timing
+3. **lyrics.ovh**: plain-text fallback
 
 Found lyrics are saved on your PC so each song is only looked up once.
+
+**About Genius:** Genius doesn't offer lyrics through its official API, so LyricNow reads them from the song's web page. That's fine for personal use but isn't covered by Genius's API terms, and it may stop working if Genius changes its website. To turn it off, right-click → untick **Also search Genius for lyrics**.
+
+**Persian songs:** Genius lists most Iranian artists in Latin letters. Songs whose Spotify title is in Latin letters (Finglish) are found most reliably there.
 
 ---
 

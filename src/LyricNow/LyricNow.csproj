@@ -17,4 +17,13 @@
     <Using Include="System.Net.Http" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Bundled fonts (SIL Open Font License, see Fonts/OFL-*.txt). -->
+    <Resource Include="Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.8.4" />
+  </ItemGroup>
+
 </Project>

@@ -11,6 +11,8 @@ public sealed class LyricsOvhProvider(HttpClient http) : ILyricsProvider
 {
     public string Name => "lyrics.ovh";
 
+    public bool ProvidesSyncedLyrics => false;
+
     public async Task<LyricsResult?> FindAsync(TrackInfo track, CancellationToken ct)
     {
         var artist = TitleCleaner.PrimaryArtist(track.Artist);

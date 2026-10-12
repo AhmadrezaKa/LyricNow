@@ -13,6 +13,11 @@ public sealed class Settings
     /// <summary>The widget grows upwards as lines wrap, so we store its bottom edge rather than its top.</summary>
     public double? Bottom { get; set; }
 
+    public WidgetTheme Theme { get; set; } = WidgetTheme.Classic;
+
+    /// <summary>Also search Genius (plain lyrics, wide coverage including Persian songs).</summary>
+    public bool UseGenius { get; set; } = true;
+
     /// <summary>Timing offset in seconds per track key; positive shows lyrics sooner.</summary>
     public Dictionary<string, double> TrackOffsets { get; set; } = [];
 

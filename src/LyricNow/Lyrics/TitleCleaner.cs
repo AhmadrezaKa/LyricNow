@@ -39,8 +39,31 @@ public static partial class TitleCleaner
         return primary.Length > 0 ? primary : artist.Trim();
     }
 
-    /// <summary>Lowercase letters and digits only, for loose comparisons.</summary>
-    public static string Normalize(string s) => NonAlphanumeric().Replace(s.ToLowerInvariant(), "");
+    /// <summary>
+    /// Lowercase letters and digits only, for loose comparisons. Persian text is often typed with
+    /// Arabic variants of the same letters (ي/ی, ك/ک), so those are unified too.
+    /// </summary>
+    public static string Normalize(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length);
+        foreach (var ch in s.ToLowerInvariant())
+        {
+            sb.Append(ch switch
+            {
+                'ي' or 'ى' or 'ئ' => 'ی',
+                'ك' => 'ک',
+                'ة' or 'ۀ' => 'ه',
+                'أ' or 'إ' or 'آ' or 'ٱ' => 'ا',
+                'ؤ' => 'و',
+                >= '۰' and <= '۹' => (char)('0' + (ch - '۰')), // Persian digits
+                >= '٠' and <= '٩' => (char)('0' + (ch - '٠')), // Arabic digits
+                'ـ' => ' ', // tatweel (decorative stretch), dropped below
+                _ => ch,
+            });
+        }
+        // Diacritics, zero-width joiners and punctuation aren't letters, so this removes them as well.
+        return NonAlphanumeric().Replace(sb.ToString(), "");
+    }
 
     public static bool LooselyMatches(string a, string b)
     {
